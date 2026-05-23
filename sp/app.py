@@ -1,11 +1,17 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, r2_score
 
-st.set_page_config(page_title="Student Performance Data Science App", layout="wide")
+BASE_DIR = Path(__file__).parent
+
+st.set_page_config(
+    page_title="Student Performance Data Science App",
+    layout="wide"
+)
 
 st.title("Student Performance Data Analytics & Data Science Project")
 st.write(
@@ -14,14 +20,20 @@ st.write(
 
 @st.cache_data
 def load_data():
-    return pd.read_csv("student_performance.csv")
+    csv_path = BASE_DIR / "student_performance.csv"
+    return pd.read_csv(csv_path)
 
 df = load_data()
 
 st.sidebar.header("Navigation")
 page = st.sidebar.radio(
     "Select Page",
-    ["Dataset Preview", "Data Analytics Dashboard", "Machine Learning Prediction", "Model Performance"]
+    [
+        "Dataset Preview",
+        "Data Analytics Dashboard",
+        "Machine Learning Prediction",
+        "Model Performance"
+    ]
 )
 
 if page == "Dataset Preview":
@@ -29,10 +41,14 @@ if page == "Dataset Preview":
     st.dataframe(df)
 
     st.subheader("Dataset Information")
+
     col1, col2, col3 = st.columns(3)
+
     col1.metric("Total Students", len(df))
     col2.metric("Average Final Marks", round(df["Final_Marks"].mean(), 2))
-    col3.metric("Pass Percentage", f"{round((df['Result'].eq('Pass').mean()) * 100, 2)}%")
+
+    pass_percentage = round((df["Result"].eq("Pass").mean()) * 100, 2)
+    col3.metric("Pass Percentage", f"{pass_percentage}%")
 
     st.subheader("Statistical Summary")
     st.write(df.describe())
@@ -41,6 +57,7 @@ elif page == "Data Analytics Dashboard":
     st.header("Data Analytics Dashboard")
 
     col1, col2, col3, col4 = st.columns(4)
+
     col1.metric("Highest Marks", df["Final_Marks"].max())
     col2.metric("Lowest Marks", df["Final_Marks"].min())
     col3.metric("Average Attendance", round(df["Attendance"].mean(), 2))
@@ -51,6 +68,7 @@ elif page == "Data Analytics Dashboard":
     st.bar_chart(result_count)
 
     st.subheader("Study Hours vs Final Marks")
+
     fig, ax = plt.subplots()
     ax.scatter(df["Study_Hours"], df["Final_Marks"])
     ax.set_xlabel("Study Hours")
@@ -59,21 +77,33 @@ elif page == "Data Analytics Dashboard":
     st.pyplot(fig)
 
     st.subheader("Correlation Heatmap")
+
     numeric_df = df.select_dtypes(include=["number"])
     corr = numeric_df.corr()
+
     fig2, ax2 = plt.subplots()
     cax = ax2.matshow(corr)
     fig2.colorbar(cax)
+
     ax2.set_xticks(range(len(corr.columns)))
     ax2.set_yticks(range(len(corr.columns)))
     ax2.set_xticklabels(corr.columns, rotation=45, ha="left")
     ax2.set_yticklabels(corr.columns)
+
     st.pyplot(fig2)
 
 elif page == "Machine Learning Prediction":
     st.header("Predict Student Final Marks")
 
-    X = df[["Study_Hours", "Attendance", "Assignment_Score", "Previous_Marks"]]
+    X = df[
+        [
+            "Study_Hours",
+            "Attendance",
+            "Assignment_Score",
+            "Previous_Marks"
+        ]
+    ]
+
     y = df["Final_Marks"]
 
     model = LinearRegression()
@@ -88,7 +118,12 @@ elif page == "Machine Learning Prediction":
 
     input_data = pd.DataFrame(
         [[study_hours, attendance, assignment_score, previous_marks]],
-        columns=["Study_Hours", "Attendance", "Assignment_Score", "Previous_Marks"]
+        columns=[
+            "Study_Hours",
+            "Attendance",
+            "Assignment_Score",
+            "Previous_Marks"
+        ]
     )
 
     prediction = model.predict(input_data)[0]
@@ -105,29 +140,46 @@ elif page == "Machine Learning Prediction":
 elif page == "Model Performance":
     st.header("Machine Learning Model Performance")
 
-    X = df[["Study_Hours", "Attendance", "Assignment_Score", "Previous_Marks"]]
+    X = df[
+        [
+            "Study_Hours",
+            "Attendance",
+            "Assignment_Score",
+            "Previous_Marks"
+        ]
+    ]
+
     y = df["Final_Marks"]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X,
+        y,
+        test_size=0.2,
+        random_state=42
     )
 
     model = LinearRegression()
     model.fit(X_train, y_train)
+
     y_pred = model.predict(X_test)
 
     mae = mean_absolute_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
 
     col1, col2 = st.columns(2)
+
     col1.metric("Mean Absolute Error", round(mae, 2))
     col2.metric("R2 Score", round(r2, 2))
 
     st.subheader("Actual Marks vs Predicted Marks")
-    result_df = pd.DataFrame({
-        "Actual Marks": y_test.values,
-        "Predicted Marks": y_pred.round(2)
-    })
+
+    result_df = pd.DataFrame(
+        {
+            "Actual Marks": y_test.values,
+            "Predicted Marks": y_pred.round(2)
+        }
+    )
+
     st.dataframe(result_df)
 
     fig, ax = plt.subplots()
@@ -135,4 +187,5 @@ elif page == "Model Performance":
     ax.set_xlabel("Actual Marks")
     ax.set_ylabel("Predicted Marks")
     ax.set_title("Actual vs Predicted Marks")
+
     st.pyplot(fig)
